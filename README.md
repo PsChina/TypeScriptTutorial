@@ -1,10 +1,10 @@
 # TypeScript Tutorial
 
-1. [为什么说 TypeScript 的火爆是必然](#为什么说 typescript 的火爆是必然)
+1. [为什么说 TypeScript 的火爆是必然](#为什么说-typescript-的火爆是必然)
 
-1. [TypeScript 类型编程为什么被叫做类型体操](#Typescript 类型编程为什么被叫做类型体操)
+1. [TypeScript 类型编程为什么被叫做类型体操](#Typescript-类型编程为什么被叫做类型体操)
 
-1. [TypeScript 类型系统支持哪些类型和类型运算](#TypeScript 类型系统支持哪些类型和类型运算)
+1. [TypeScript 类型系统支持哪些类型和类型运算](#TypeScript-类型系统支持哪些类型和类型运算)
 
 ## 为什么说 TypeScript 的火爆是必然
 
