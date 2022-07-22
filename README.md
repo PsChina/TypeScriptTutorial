@@ -239,7 +239,7 @@ TypeScript 给 JavaScript 增加了一套类型系统，但并没有改变 JS �
 
 复合类型方面，JS 有 class、Array，这些 TypeScript 类型系统也都支持，但是又多加了三种类型：元组（Tuple）、接口（Interface）、枚举（Enum）。
 
-### 元祖
+### 元组
 
 `元组（Tuple）`就是元素个数和类型固定的数组类型：
 
@@ -1036,6 +1036,87 @@ __TypeScript 的 type、infer、类型参数声明的变量都不能修改，想
 
 __Push__
 
+有这样一个元组类型：
+
+```ts
+type tuple = [1,2,3]
+```
+
+我想给这个元组类型再添加一些类型，怎么做呢？
+
+TypeScript 类型变量不支持修改，我们可以构造一个新元组类型：
+
+```ts
+type Push<Arr extends unknown[], Ele> = [...Arr, Ele]
+```
+
+ 类型参数 Arr 是要修改的数组/元组类型，元素的类型任意，也就是 unknown。
+
+ 类型参数 Ele 是添加的元素类型
+
+ 返回的是用 Arr 已有的元素加上 Ele 构造的新的元组类型。
+
+ ```ts
+ type PushResult = Push<[1,2,3],4>
+ // type PushResult = [1,2,3,4]
+ ```
+
+ 这就是数组/元组的重新构造。
+
+ >__数组和元组的区别__：数组类型是指任意多个同一类型的元素构造成的，比如 `number[]`、`Array<number>`，而元组则是数量固定，类型可以不同的元素构成的，比如`[1,true,'shan']`。
+
+ __Unshift__
+
+ 可以在后面添加，同样也可以在前面添加：
+
+ ```ts
+ type Unshift<Arr extends  unknown[], Ele> = [Ele, ...Arr];
+ ```
+
+  ```ts
+ type UnshiftResult = Unshift<[1,2,3],0>
+ // type UnshiftResult = [0,1,2,3]
+ ```
+
+这两个案例比较简单，我们来做一个复杂的：
+
+__Zip__
+
+有这样两个元组：
+
+```ts
+type tuple1 = [1,2];
+type tuple2 = ['shan', 'song'];
+```
+
+我们想把它们合并成这样的元组：
+
+```ts
+type tuple = [[1, 'shan'], [2, 'song']];
+```
+
+思路很容易想到，提取元组中的两个元素，构造成新的元组：
+
+```ts
+type Zip<One extends [unknown, unknown], Other extends [unknown, unknown]> = One extends [infer OneFirst, infer OneSecond] ? Other extends [infer OtherFirst, infer OtherSeconed] ? [[OneFirst, OtherFirst],[OneSecond, OtherSeconed]] : [] : []
+```
+
+两个类型参数 One、Other 是两个元组，类型是 [unknown, unknown]，代表 2 个任意类型的元素构成的元组。
+
+通过 infer 分别提取 One 和 Other 的元素到 infer 声明的局部变量 OneFirst、OneSecond、OtherFirst、OtherSecond 里。
+
+用提取的元素构造成新的元组返回即可：
+
+
+```ts
+type One = ['a','b']
+
+type Two = [1,2]
+
+type ZipResult = Zip<One,Two>
+
+type ZipResult = [["a", 1], ["b", 2]]
+```
 
 
 
