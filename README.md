@@ -239,11 +239,15 @@ TypeScript 给 JavaScript 增加了一套类型系统，但并没有改变 JS �
 
 复合类型方面，JS 有 class、Array，这些 TypeScript 类型系统也都支持，但是又多加了三种类型：元组（Tuple）、接口（Interface）、枚举（Enum）。
 
-### 元组
+__元组__：
 
 `元组（Tuple）`就是元素个数和类型固定的数组类型：
 
-对象：
+```ts
+type tuple = ['string', true, 0]
+```
+
+__对象__：
 
 ```ts
 interface IPerson {
@@ -262,7 +266,7 @@ const obj: IPerson = {
 }
 ```
 
-函数:
+__函数__：
 
 ```ts
 interface SayHello {
@@ -274,7 +278,7 @@ const func: SayHello = (name: string) => {
 }
 ```
 
-构造器：
+__构造器__：
 
 ```ts
 interface PersonConstructor {
@@ -301,7 +305,7 @@ obj.age = 18;
 总之，__接口可以用来描述函数、构造器、索引类型（对象、class、数组）等复合类型__。
 
 
-### 枚举
+__枚举__：
 
 `枚举（Enum）`是一系列值的复合：
 
