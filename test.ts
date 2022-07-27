@@ -62,3 +62,17 @@ interface Person {
     age: number,
 }
 
+type ToRequired<T extends Record<any, any>> = {
+    [Key in keyof T]-?: T[Key]
+}
+
+type ToPartialRsult = ToPartial<Person>
+
+
+interface Person2 {
+    name: string,
+    age?: number,
+}
+
+
+type ToRequiredRsult = ToRequired<Person2>
