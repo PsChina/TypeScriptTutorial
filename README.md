@@ -1036,7 +1036,7 @@ __TypeScript 的 type、infer、类型参数声明的变量都不能修改，想
 
 我们先从简单的开始：
 
-### 数组类型的重新构造
+### 数组类型的重新构造：
 
 __Push__
 
@@ -1119,9 +1119,332 @@ type Two = [1,2]
 
 type ZipResult = Zip<One,Two>
 
-type ZipResult = [["a", 1], ["b", 2]]
+// type ZipResult = [["a", 1], ["b", 2]]
+```
+
+但是这样只能合并两个元素的元组，如果是任意个呢？
+
+那就得递归了：
+
+```ts
+type Zip2<One extends unknown[], Other extends unknown> = One extends [infer OneFirst, ...infer OneRest] ? Other extends [infer OtherFirst, ...infer OtherRest] ? [[OneFirst, OtherFirst], ...Zip2<OneRest, OtherRest>] : [] : []
+```
+
+类型参数 One、Other 声明为 unknown[]，也就是元素个数任意，类型任意的数组。
+
+每次提取 One 和 Other 的第一个元素 OneFirst、OtherFirst，剩余的放到 OneRest、OtherRest 里。
+
+用 OneFirst、OtherFirst 构造成新的元组的一个元素，剩余元素继续递归处理 OneRest、OtherRest。
+
+这样，就能处理任意个数元组的合并：
+
+
+```ts
+type One = ['a','b','c']
+
+type Two = [1,2,3]
+
+type ZipResult = Zip2<One,Two>
+
+// type ZipResult = [["a", 1], ["b", 2], ["c", 3]]
+```
+
+了解了数组类型的重新构造，我们再来看下字符串类型的：
+
+### 字符串类型的重新构造：
+
+CapitalizeStr 
+
+我们想把一个字符串字面量类型的 'shan' 转为首字母大写的 'Shan'。
+
+需要用到字符串类型的提取和重新构造：
+
+```ts 
+type CarpitalizeStr<Str extends string> = Str extends `${infer First}${infer Rest}` ? `${Uppercase<First>}${Rest}` : Str
+
+```
+
+我们声明了类型参数 Str 是要处理的字符串类型，通过 extends 约束为 string。
+
+通过 infer 提取出首个字符到局部变量 First，提取后面的字符到局部变量 Rest。
+
+然后使用 TypeScript 提供的内置高级类型 Uppercase 把首字母转为大写，加上 Rest，构造成新的字符串类型返回。
+
+```ts
+type shan = 'shan'
+
+type carpitalizeStr = CarpitalizeStr<shan>
+
+// type carpitalizeStr = "Shan"
+```
+
+这就是字符串类型的重新构造：__从已有的字符串类型中提取出一些部分字符串，经过一系列变换，构造成新的字符串类型__。
+
+__CamelCase__
+
+我们再来实现 shan_shan_shan 到 shanShanShan 的变换。
+
+同样是提取和重新构造：
+
+```ts
+type CamelCase<Str extends string> = Str extends `${infer Left}_${infer Right}${infer Rest}` ? `${Left}${Uppercase<Right>}${CamelCase<Rest>}` : Str
+```
+
+类型参数 Str 是待处理的字符串类型，约束为 string。
+
+提取 _ 之前和之后的两个字符到 infer 声明的局部变量 Left 和 Right，剩下的字符放到 Rest 里。
+
+然后把右边的字符 Right 大写，和 Left 构造成新的字符串，剩余的字符 Rest 要继续递归的处理。
+
+这样就完成了从下划线到驼峰形式的转换：
+
+```ts
+type camelCaseString = CamelCase<'pan_shan_shan'>
+// type panShanShan = "panShanShan"
+```
+
+__DropSubStr__
+
+可以修改自然也可以删除，我们再来做一个删除一段字符串的案例：删除字符串中的某个子串
+
+```ts
+type DropSubStr<Str extends string, SubStr extends string> = Str extends `${infer Prefix}${SubStr}${infer Suffix}` ? DropSubStr<`${Prefix}${Suffix}`, SubStr> : Str
+```
+
+类型参数 Str 是待处理的字符串， SubStr 是要删除的字符串，都通过 extends 约束为 string 类型。
+
+通过模式匹配提取 SubStr 之前和之后的字符串到 infer 声明的局部变量 Prefix、Suffix 中。
+
+如果不匹配就直接返回 Str。
+
+如果匹配，那就用 Prefix、Suffix 构造成新的字符串，然后继续递归删除 SubStr。直到不再匹配，也就是没有 SubStr 了。
+
+```ts
+type DropSubStrResult = DropSubStr<'shanshan~~~', '~'>
+// type DropSubStrResult = "shanshan"
+```
+
+字符串类型的重新构造之后，我们再来看下函数类型的重新构造：
+
+
+### 函数类型的重新构造：
+
+之前我们分别实现了参数和返回值的提取，那么重新构造就是用这些提取出的类型做下修改，构造一个新的类型即可。
+
+
+比如在已有的函数类型上添加一个参数：
+
+__AppendArgument__
+
+```ts
+type AppendArgument<Func extends Function, Arg> = Func extends (...args: infer Args) => infer returnType ? (...args: [...Args, Arg]) => returnType : never
+```
+
+类型参数 Func 是待处理的函数类型，通过 extends 约束为 Function，Arg 是要添加的参数类型。
+
+通过模式匹配提取参数到 infer 声明的局部变量 Args 中，提取返回值到局部变量 ReturnType 中。
+
+用 Args 数组添加 Arg 构造成新的参数类型，结合 ReturnType 构造成新的函数类型返回。
+
+这样就完成了函数类型的修改：
+
+
+```ts
+type Func = (a:number,number)=>void
+
+type AppendArgumentResult = AppendArgument<Func, number>
+
+// type AppendArgumentResult = (args_0: number, args_1: any, args_2: number) => void
+```
+
+最后，我们再来看下索引类型的重新构造
+
+### 索引类型的重新构造
+
+索引类型是聚合多个元素的类型，class、对象等都是索引类型，比如这就是一个索引类型：
+
+
+```ts
+type obj = {
+    name:string;
+    age:number;
+    gender:boolean;
+}
+```
+
+索引类型可以添加修饰符 readonly（只读）、?（可选）:
+
+```ts
+type obj = {
+    readonly name:string;
+    age?:number;
+    gender:boolean;
+}
+```
+
+对它的修改和构造新类型涉及到了映射类型的语法：
+
+```ts
+type Mapping<Obj extends object> = { 
+    [Key in keyof Obj]: Obj[Key]
+}
+```
+
+__Mapping__
+
+映射的过程中可以对 value 做下修改，比如：
+
+```ts
+type Mapping<Obj extends object> = { 
+    [Key in keyof Obj]: [Obj[Key], Obj[Key], Obj[Key]]
+}
+```
+
+类型参数 Obj 是待处理的索引类型，通过 extends 约束为 object。
+
+用 keyof 取出 Obj 的索引，作为新的索引类型的索引，也就是 Key in keyof Obj。
+
+值的类型可以做变换，这里我们用之前索引类型的值 Obj[Key] 构造成了三个元素的元组类型 [Obj[Key], Obj[Key], Obj[Key]]：
+
+```ts
+type res = Mapping<{a:1,b:2}>
+// type res = {
+//     a: [1, 1, 1], b: [2, 2, 2]
+// }
+```
+
+__UppercaseKey__
+
+
+除了可以对 Value 做修改，也可以对 Key 做修改，使用 as， 这叫 `重映射`:
+
+比如把索引类型的 Key 变为大写。
+
+```ts
+type UppercaseKey<Obj extends object> = {
+    [Key in keyof Obj as Uppercase<Key & string>] : Obj[Key]
+}
+```
+
+类型参数 Obj 是待处理的索引类型，通过 extends 约束为 object。
+
+新的索引类型的索引为 Obj 中的索引，也就是 Key in keyof Obj，但要做一些变换，也就是 as 之后的。
+
+通过 Uppercase 把索引 Key 转为大写，因为索引可能为 string、number、symbol 类型，而这里只能接受 string 类型，所以要 & string，也就是取索引中 string 的部分。
+
+value 保持不变，也就是之前的索引 Key 对应的值的类型 Obj[Key]。
+
+这样构造出的新的索引类型，就把原来索引类型的索引转为了大写而数字类型的 key 则被抛弃了：
+
+```ts
+type UppercaseKeyResult = UppercaseKey<{a:1,b:2, [1]:1}>
+// type UppercaseKeyResult = {
+//     A: 1;
+//     B: 2;
+// }
+```
+
+__Record__
+
+TypeScript 提供了内置的高级类型 Record 来创建索引类型：
+
+```ts
+type Record<K extends string | number | symbol, T> = { [P in K]: T; }
 ```
 
 
+指定索引和值的类型分别为 K 和 T，就可以创建一个对应的索引类型。
+
+上面的索引类型的约束我们用的 object，其实更语义化一点我推荐用 Record<string, object>：
+
+```ts
+type UppercaseKey2<Obj extends Record<string, any>> = { 
+    [Key in keyof Obj as Uppercase<Key & string>]: Obj[Key]
+}
+```
+
+__ToReadonly__
+
+索引类型的索引可以添加 readonly 的修饰符，代表只读。
+
+那我们就可以实现给索引类型添加 readonly 修饰的高级类型：
+
+```ts
+type ToReadonly<T extends Record<any, any>> = {
+    readonly [Key in keyof T]: T[Key]
+} 
+```
+
+通过映射类型构造了新的索引类型，给索引加上了 readonly 的修饰，其余的保持不变，索引依然为原来的索引 Key in keyof T，值依然为原来的值 T[Key]。
 
 
+```ts
+type ToReadonlyResult = ToReadonly<{a:1,b:2}>
+
+// type ToReadonlyResult = {
+//     readonly a: 1;
+//     readonly b: 2;
+// }
+```
+
+
+__ToPartial__
+
+同理，索引类型还可以添加可选修饰符：
+
+```ts
+type ToPartial<T extends Record<any, any>> = {
+    [Key in keyof T]?: T[Key]
+}
+```
+
+给索引类型 T 的索引添加了 ? 可选修饰符，其余保持不变。
+
+```ts
+interface Person {
+    name: string,
+    age: number,
+}
+
+
+type ToPartialRsult = ToPartial<Person>
+
+// type ToPartialRsult = {
+//     name?: string | undefined;
+//     age?: number | undefined;
+// }
+```
+
+__ToRequired__
+
+同理，也可以去掉可选修饰符：
+
+```ts
+type ToRequired<T extends Record<any, any>> = {
+    [Key in keyof T]-?: T[Key]
+}
+```
+给索引类型 T 的索引去掉 ? 的修饰 ，其余保持不变。
+
+```ts
+interface Person {
+    name: string,
+    age?: number,
+}
+
+
+type ToRequiredRsult = ToRequired<Person>
+
+// type ToRequiredRsult = {
+//     name: string;
+//     age: number;
+// }
+```
+
+__FilterByValueType__
+
+可以在构造新索引类型的时候根据值的类型做下过滤：
+
+```ts
+
+```
