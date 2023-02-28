@@ -1003,7 +1003,7 @@ TypeScript 类型系统支持 3 种可以声明任意类型的变量：type、in
 type 叫做类型别名，其实就是申明一个变量存储某个类型：
 
 ```ts
-type ttt = Promsie<number>;
+type ttt = Promise<number>;
 ```
 
 infer 用于类型提取，然后存到一个变量里，相当于局部变量:
